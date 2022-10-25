@@ -1,10 +1,8 @@
-from re import M
+from collections import Counter
+from django.db.models import Sum
 import pandas as pd
 
-from ..models import Customer, Product, Order
-
-
-    
+from ..models import Customer, Product, Order, OrderProduct
 
 def _get_uploader(key):
     if key == 'customers':
@@ -62,11 +60,12 @@ def _upload_product(data, columns):
 def _upload_order(data, columns):
     order, _ = Order.objects.get_or_create(
         id=data[columns.get_loc('id')],
-        customer_id=data[columns.get_loc('customer')]
-    )
+        customer_id=data[columns.get_loc('customer')])
     
-    for product in data[columns.get_loc('products')].split(' '):
-        order.products.add(
-            Product.objects.get(id = product)
-        )
+    product_ids = data[columns.get_loc('products')].split(' ')
+    for product, quantity in Counter(product_ids).items(): # Transform array into dict with keys as array items and values as repetitions
+        OrderProduct.objects.get_or_create(
+            order=order,
+            product=Product.objects.get(id = product),
+            quantity=quantity)
     

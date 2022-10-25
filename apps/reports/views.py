@@ -40,7 +40,7 @@ class OrderPricesView(APIView):
     
     def get(self, request):
         order_prices = reports_service.order_prices()
-        return Response('', status=status.HTTP_200_OK)
+        return Response(order_prices, status=status.HTTP_200_OK)
     
 class ProductCustomersView(APIView):
     

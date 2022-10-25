@@ -7,10 +7,7 @@ class Customer(models.Model):
     
     def __str__(self):
         return f'{self.firstname} {self.lastname}'
-    
-    def __repr__(self):
-        return f'{self.firstname} {self.lastname}'
-    
+        
     
 class Product(models.Model):
     
@@ -20,17 +17,31 @@ class Product(models.Model):
     def __str__(self):
         return f'{self.name}'
     
-    def __repr__(self):
-        return f'{self.name}'
-    
-    
+        
 class Order(models.Model):
     
     customer = models.ForeignKey(Customer, null=False, on_delete=models.CASCADE)
-    products = models.ManyToManyField(Product, db_table="order_products")
+    products = models.ManyToManyField(Product, through='OrderProduct')
+    
+    @property
+    def order_price(self):
+        return sum(order_product.total_price for order_product in self.products)
     
     def __str__(self):
         return f'{self.customer} -> {self.products}'
     
-    def __repr__(self):
-        return f'{self.customer} -> {self.products}'
+class OrderProduct(models.Model):
+    
+    product = models.ForeignKey(Product, null=False, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, null=False, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    quantity = models.IntegerField(null=False, default=1)
+    
+    @property
+    def total_price(self):
+        return self.product.cost * self.quantity
+    
+    def __str__(self):
+            return f'{self.order} -> {self.product}'
+
+        
