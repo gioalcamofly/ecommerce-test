@@ -1,4 +1,7 @@
+from attr import fields
 from rest_framework import serializers
+
+from django.core.validators import FileExtensionValidator
 
 from .models import Customer, Product, Order
 
@@ -32,3 +35,9 @@ class OrderSerializer(serializers.ModelSerializer):
             'customer',
             'products'
         ]
+        
+class UploadReportSerializer(serializers.Serializer):
+    
+    customers = serializers.FileField(validators=[FileExtensionValidator(allowed_extensions=['csv'])])
+    products = serializers.FileField(validators=[FileExtensionValidator(allowed_extensions=['csv'])])
+    orders = serializers.FileField(validators=[FileExtensionValidator(allowed_extensions=['csv'])])

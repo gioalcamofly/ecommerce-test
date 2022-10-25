@@ -2,3 +2,5 @@ django==3.2
 django-rest-framework==3.14.0
 mysqlclient==2.1.1
 python-dotenv==0.21.0
+djangorestframework-csv==2.1.1
+pandas==1.5.1
