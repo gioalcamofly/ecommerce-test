@@ -1,10 +1,15 @@
 from collections import Counter
-from django.db.models import Sum
+from django.db.models import F, Sum, QuerySet
+from django_mysql.models import GroupConcat
+from types import FunctionType
+
 import pandas as pd
+from pandas.core.series import Series
+from pandas.core.indexes.base import Index
 
 from ..models import Customer, Product, Order, OrderProduct
 
-def _get_uploader(key):
+def _get_uploader(key: str) -> FunctionType:
     if key == 'customers':
         return _upload_customer
     elif key == 'products':
@@ -15,7 +20,7 @@ def _get_uploader(key):
         raise ValueError(key)
     
 # TODO: Validate file columns
-def upload_data(data):
+def upload_data(data: dict) -> None:
     
     for key, file in data.items():
         uploader = _get_uploader(key)
@@ -26,19 +31,42 @@ def upload_data(data):
             lambda row: uploader(row, dataframe.columns),
             axis=1
         )
-            
-    return
 
-def order_prices():
-    return []
 
-def product_customers():
-    return []
+def order_prices() -> QuerySet:
+    order_prices = OrderProduct.objects \
+        .annotate(partial_price=F('product__cost') * F('quantity')) \
+        .values('order_id') \
+        .annotate(total_price=Sum(F('partial_price'))) \
+        .values('order_id', 'total_price') \
+        .order_by('order_id')
+        
+    return order_prices
 
-def customer_ranking():
-    return []
+def product_customers() -> QuerySet:
+    product_customers = OrderProduct.objects \
+        .annotate(customer_id=F('id')) \
+        .values('product_id') \
+        .annotate(customer_ids=GroupConcat(F('customer_id'))) \
+        .values('product_id', 'customer_ids') \
+        .order_by('product_id')
+        
+    return product_customers
 
-def _upload_customer(data, columns):
+def customer_ranking() -> QuerySet:
+    customer_ranking = OrderProduct.objects \
+        .annotate(partial_price=F('product__cost') * F('quantity')) \
+        .values('order__customer__id') \
+        .annotate(total_price=Sum(F('partial_price')), 
+                  customer_id=F('order__customer__id'), 
+                  customer_name=F('order__customer__firstname'),
+                  customer_lastname=F('order__customer__lastname')) \
+        .values('customer_id', 'customer_name', 'customer_lastname', 'total_price') \
+        .order_by('-total_price')
+        
+    return customer_ranking
+
+def _upload_customer(data: Series, columns: Index) -> None:
     Customer.objects.get_or_create(
         id=data[columns.get_loc('id')],
         firstname=data[columns.get_loc('firstname')],
@@ -46,7 +74,7 @@ def _upload_customer(data, columns):
     )
     
 # TODO: solve problem with get_or_create -> giving duplicate entry integration error
-def _upload_product(data, columns):
+def _upload_product(data: Series, columns: Index) -> None:
     try:
         product = Product.objects.get(id = columns.get_loc('id'))
     except Product.DoesNotExist:
@@ -57,7 +85,7 @@ def _upload_product(data, columns):
         )
         product.save()
 
-def _upload_order(data, columns):
+def _upload_order(data: Series, columns: Index) -> None:
     order, _ = Order.objects.get_or_create(
         id=data[columns.get_loc('id')],
         customer_id=data[columns.get_loc('customer')])

@@ -1,7 +1,10 @@
 from rest_framework.views import APIView
+from rest_framework.request import Request
 from rest_framework.response import Response
+from django.http import HttpResponse
 from rest_framework import viewsets
 from rest_framework import status
+import csv
 
 from rest_framework_csv import renderers as r
 
@@ -26,7 +29,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     lookup_field = 'pk'
     
 class UploadDataView(APIView):
-    def post(self, request):
+    def post(self, request: Request) -> Response:
         serializer = UploadReportSerializer(data=request.data)
         if serializer.is_valid():
             reports_service.upload_data(request.data)
@@ -35,25 +38,43 @@ class UploadDataView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class OrderPricesView(APIView):
-    
-    renderer_classes = (r.CSVRenderer,)
-    
-    def get(self, request):
-        order_prices = reports_service.order_prices()
-        return Response(order_prices, status=status.HTTP_200_OK)
+        
+    def get(self, request: Request) -> HttpResponse:
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="order_prices.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['Order ID', 'Order Price'])
+        writer.writerows([
+            [order_price['order_id'], order_price['total_price']] for order_price in reports_service.order_prices()
+        ])
+        
+        return response
     
 class ProductCustomersView(APIView):
     
-    renderer_classes = (r.CSVRenderer,)
-    
-    def get(self, request):
-        product_customers = reports_service.product_customers()
-        return Response('', status=status.HTTP_200_OK)
+    def get(self, request: Request) -> HttpResponse:
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="product_customers.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['Product ID', 'Customer IDs'])
+        writer.writerows([
+            [product_customer['product_id'], product_customer['customer_ids']] for product_customer in reports_service.product_customers()
+        ])
+        
+        return response
     
 class CustomerRankingView(APIView):
     
-    renderer_classes = (r.CSVRenderer,)
-    
-    def get(self, request):
-        customer_ranking = reports_service.customer_ranking()
-        return Response('', status=status.HTTP_200_OK)
+    def get(self, request: Request) -> HttpResponse:
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="customer_ranking.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['Customer ID', 'Customer Name', 'Customer Lastname', 'Total'])
+        writer.writerows([
+            [
+                customer['customer_id'], customer['customer_name'], 
+                customer['customer_lastname'], customer['total_price']
+            ] for customer in reports_service.customer_ranking()
+        ])
+        
+        return response
