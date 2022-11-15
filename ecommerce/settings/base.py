@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -28,16 +29,28 @@ SECRET_KEY = 'django-insecure-aij88yt(^%k!!+4horofg)lbop+r!beys*gb1fdi3&_+lolxd-
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.mysql'),
-        'NAME': os.environ.get('DB_NAME', 'ecommerce'),
-        'USER': os.environ.get('DB_USERNAME', 'root'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '3306')
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': os.environ.get('DB_ENGINE_TEST', 'django.db.backends.mysql'),
+            'NAME': os.environ.get('DB_NAME_TEST', 'ecommerce_test'),
+            'USER': os.environ.get('DB_USERNAME_TEST', 'root'),
+            'PASSWORD': os.environ.get('DB_PASSWORD_TEST', ''),
+            'HOST': os.environ.get('DB_HOST_TEST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT_TEST', '3306')
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.mysql'),
+            'NAME': os.environ.get('DB_NAME', 'ecommerce'),
+            'USER': os.environ.get('DB_USERNAME', 'root'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '3306')
+        }
+    }
 
 
 # Application definition
